@@ -20,9 +20,17 @@ const eventSchema = new Schema({
     type: String, 
     required: true
   },
+  total_seats: { 
+    type: Number, 
+    required: true
+  },
   available_seats: { 
     type: Number, 
     required: true
+  },
+  sold_out_seats : {
+    type : Number,
+    default : 0
   },
   ticket_price: { 
     type: Number, 
