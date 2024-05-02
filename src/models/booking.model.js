@@ -2,12 +2,12 @@ import mongoose, {Schema} from "mongoose";
 
 const bookingSchema = new Schema({
   user_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
   },
   event_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: Schema.Types.ObjectId, 
     ref: 'Event', 
     required: true
   },
@@ -25,7 +25,7 @@ const bookingSchema = new Schema({
   },
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'canceled'], 
+    enum: ['pending', 'locked', 'confirmed', 'canceled'], 
     default: 'pending'
  }
 });

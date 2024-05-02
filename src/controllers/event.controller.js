@@ -4,6 +4,8 @@ import {ApiError} from "../utils/apiError.js"
 import {ApiResponse} from "../utils/apiResponse.js"
 import { Event } from "../models/event.model.js"
 import { User } from "../models/user.model.js"
+import { Venue } from "../models/venue.model.js"
+import { Phase } from "../models/phase.model.js"
 
 const createEvent = asyncHandler(async(req, res) => {
     const user = req.user;
@@ -17,21 +19,70 @@ const createEvent = asyncHandler(async(req, res) => {
         throw new ApiError(400, "You can't create an event");
     }
 
-    const { name, description, date, time, venue, total_seats, ticket_price } = req.body;
+    const { name, description, date, time, venue, total_seats, ticket_price, phases=[] } = req.body;
 
-    if(!name || !description || !date || !time || !venue || !total_seats || !ticket_price){
+    if(!name || !description || !date || !time || !venue || !total_seats){
         throw new ApiError(404, "All fields are required");
     }
+    if(!phases && !ticket_price){
+        throw new ApiError(404, "All fields are required");
+    }
+    
+    // if we have phases then
+    let eventPhases = [];
+    if(phases.length){
+        await Promise.all(phases.map(async(phase)=> {
+            if(!phase.name || !phase.price || !phase.phase_tickets){
+                throw new ApiError(404, "Please provide the enough details for phases")
+            }
+            const newPhase = await Phase.create({
+               name : phase.name,
+               phase_tickets : phase.phase_tickets,
+               available_phase_tickets : phase.phase_tickets,
+               price : phase.price
+           });
+           if(newPhase){
+               eventPhases.push(newPhase);
+           }else{
+            throw new ApiError(500, "Error while creating the phases")
+           }
+       }))
+    }
 
+    let newVenue;
+    if(venue.venue_id){
+        newVenue = await Venue.findById(venue.venue_id);
+    }
+
+    // venue is already in database
+    if(!newVenue){
+        newVenue = await Venue.create({
+            name : venue.name,
+            address : venue.address,
+            city : venue.city,
+            country : venue.country,
+            capacity : venue.capacity,
+            state : venue.state || undefined,
+        })
+        await newVenue.save();
+    }
+    if(!newVenue){
+        throw new ApiError(500, "Error occured while creating new venue")
+    }
+    
+    // creating the new event
     const newEvent = await Event.create({
         name,
         description,
         date,
         time,
-        venue,
+        venue : newVenue,
         total_seats,
         available_seats : total_seats,
-        ticket_price
+        ticket_price,
+        phases : eventPhases,
+        phase_system : eventPhases.length,
+        current_phase : 0,
     })
 
     await newEvent.save();
