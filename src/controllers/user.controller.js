@@ -128,7 +128,7 @@ const getCurrentUser = asyncHandler(async(req, res) =>{
     
     const user = await User.findById(
         req.user?._id
-        ).select("-password -refreshToken").populate("projects")
+        ).select("-password -refreshToken")
     console.log("User : ", user)
    
     return res

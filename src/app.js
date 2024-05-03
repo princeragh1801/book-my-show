@@ -25,7 +25,7 @@ app.get("/", (req, res)=>{
 
 // routes
 import userRouter from "./routes/user.route.js"
-
+import eventRouter from "./routes/event.route.js"
 app.use("/api/v1/users", userRouter)
-
+app.use("/api/v1/events", eventRouter);
 export {app}

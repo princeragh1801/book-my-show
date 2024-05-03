@@ -19,7 +19,7 @@ const createEvent = asyncHandler(async(req, res) => {
         throw new ApiError(400, "You can't create an event");
     }
 
-    const { name, description, date, time, venue, total_seats, ticket_price, phases=[] } = req.body;
+    const { name, description, date, time, venue, total_seats, ticket_price, phases=[], category } = req.body;
 
     if(!name || !description || !date || !time || !venue || !total_seats){
         throw new ApiError(404, "All fields are required");
@@ -81,7 +81,8 @@ const createEvent = asyncHandler(async(req, res) => {
         available_seats : total_seats,
         ticket_price,
         phases : eventPhases,
-        phase_system : eventPhases.length,
+        category,
+        phase_system : eventPhases.length > 0,
         current_phase : 0,
     })
 
@@ -92,7 +93,7 @@ const createEvent = asyncHandler(async(req, res) => {
     return res.status(200).json(
         new ApiResponse(
             200,
-            {event},
+            {newEvent},
             "Event created successfully"
         )
     )
@@ -116,12 +117,15 @@ const getEventDetails = asyncHandler(async(req, res) =>{
     )
 })
 
+// fix this
 const deleteEvent = asyncHandler(async(req, res) => {
+    console.log("Inside delete event");
     const {eventId} = req.body;
     if(!eventId){
         throw new ApiError(400, "Invalid request");
     }
-    await Event.deleteOne({id : eventId});
+    console.log("Event id : ", eventId)
+    await Event.deleteOne({_id : eventId});
 
     return res.status(200).json(
         new ApiResponse(
