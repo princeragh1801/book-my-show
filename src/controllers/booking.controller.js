@@ -8,8 +8,10 @@ import { sendMail } from "../utils/sendMail.js";
 import { generateTicketPDF } from "../utils/generateTicketPdf.js";
 import { bookingTemplate } from "../mail/templates/bookingConfirmationMail.js";
 import {User} from "../models/user.model.js"
-import {parse} from "node-html-parser";
 import { htmlToText } from "html-to-text";
+import Razorpay from "razorpay";
+
+
 
 const bookEventTicket = asyncHandler(async(req, res) => {
     const { event_id, num_tickets} = req.body;
@@ -74,12 +76,28 @@ const bookEventTicket = asyncHandler(async(req, res) => {
         ticketNumber : num_tickets,
         venue : event.venue
     })
-    // console.log("Tickets pdf : ", tickets_pdf)
-    // add payment logic here
-    const paymentDone = true;
-    // if payment is failed
-    // update available tickets
-    if(!paymentDone){
+    console.log("Before payment order");
+    const razorpay = new Razorpay({
+        key_id : process.env.ROZARPAY_KEY_ID,
+        key_secret : process.env.ROZARPAY_SECRET_KEY
+    })
+
+    razorpay.orders.create({
+        amount : total_price*1000,
+        currency : 'INR',
+        receipt: 'order_rcptid_11'
+    }, (error, order) => {
+        if(error){
+            console.log("Error while creating order", error)
+        }else{
+            console.log("Order : ", order)
+        }
+
+    })
+    
+    // console.log("Payment order : ", paymentOrder)
+    const paymentOrder = false;
+    if(!paymentOrder){
         if(event.phase_system){
             const phaseId = event.phases[event.current_phase]._id;
             const phase = await Phase.findById(phaseId);
@@ -100,6 +118,7 @@ const bookEventTicket = asyncHandler(async(req, res) => {
             }
         }
     }
+    console.log("Payment order : ", paymentOrder.status);
     booking.status = 'confirmed'
     await booking.save();
     // send the booking details to user
