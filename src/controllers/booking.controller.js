@@ -41,12 +41,25 @@ const bookEventTicket = asyncHandler(async(req, res) => {
         const phaseId = event.phases[current_phase]._id;
         const phase = await Phase.findById(phaseId);
         if(num_tickets > phase.available_phase_tickets){
-            // it should be improvised
-            throw new ApiError(500, "Not enough seats available for this phase");
+            total_price = phase.available_phase_tickets*phase.price;
+            let remTickets = num_tickets-phase.available_phase_tickets;
+            phase.available_phase_tickets = 0;
+            await phase.save();
+            event.current_phase += 1;
+            await event.save();
+            const nextPhaseId = event.phases[event.current_phase];
+            const nextPhase = await Phase.findById(nextPhaseId);
+            console.log("Next phase : ", nextPhase)
+            total_price += (nextPhase.price*remTickets);
+            nextPhase.available_phase_tickets -= remTickets;
+            await nextPhase.save();
+            
+        }else{
+            total_price = phase.price*num_tickets;
+            phase.available_phase_tickets -= num_tickets;
+            await phase.save();
         }
-        total_price = phase.price*num_tickets;
-        phase.available_phase_tickets -= num_tickets;
-        await phase.save();
+        
     }else{
         if(num_tickets > event.available_seats){
             throw new ApiError(500, "Not enough tickets available");
@@ -83,7 +96,7 @@ const bookEventTicket = asyncHandler(async(req, res) => {
     })
 
     razorpay.orders.create({
-        amount : total_price*1000,
+        amount : total_price*100,
         currency : 'INR',
         receipt: 'order_rcptid_11'
     }, (error, order) => {
@@ -96,7 +109,7 @@ const bookEventTicket = asyncHandler(async(req, res) => {
     })
     
     // console.log("Payment order : ", paymentOrder)
-    const paymentOrder = false;
+    const paymentOrder = true;
     if(!paymentOrder){
         if(event.phase_system){
             const phaseId = event.phases[event.current_phase]._id;
